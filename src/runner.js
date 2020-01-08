@@ -25,7 +25,7 @@ function convertToSandbox(params, context) {
 
 // 运行脚本
 async function run(script) {
-  const { code, timeout, params, context } = script;
+  const { code, timeout, params, context, id } = script;
   try {
     const sandbox = convertToSandbox(params, context);
     const vm = new VM({ timeout, sandbox });
@@ -33,11 +33,13 @@ async function run(script) {
     process.send({
       type: MESSAGE.RUN_END,
       value: result,
+      scriptId: id
     });
   } catch (error) {
     process.send({
       type: MESSAGE.RUN_ERROR,
       value: error.message || error,
+      scriptId: id
     });
   }
 }

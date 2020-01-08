@@ -15,7 +15,7 @@ class VMBox {
   }
 
   // 运行函数
-  async run(code, context = {}, stack) {
+  async run(code, context = {}, stack = false) {
     // 将脚本交给worker运行
     const script = new Script({ code, asyncTimeout: this.asyncTimeout, context, timeout: this.timeout });
     this.worker.execute(script, stack);

@@ -75,18 +75,37 @@ class Worker {
   killWorker() {
     this.subProcess.kill();
     this.subProcess = null;
+    this.resetStack();
     this.state = WORKER_STATE.NONE;
     this.createWorker();
+    this.consume();
   }
 
   resetWorker() {
     this.script.stop();
+    this.resetStack();
     this.script = null;
     this.state = WORKER_STATE.IDLE;
-    // 执行队列中的任务
-    const nextScript = this.queue.shift();
-    if (nextScript) {
-      this.runScript(nextScript);
+    this.consume();
+  }
+
+  consume() {
+    if (this.state === WORKER_STATE.IDLE) {
+      // 执行队列中的任务
+      const nextScript = this.queue.shift();
+      if (nextScript) {
+        this.runScript(nextScript);
+      }
+    }
+  }
+
+  // 重置 funcStack 防止内存泄露
+  resetStack() {
+    this.stackScript = null;
+    if (this.funcStack) {
+      for (const script of this.funcStack) {
+        script.reject('run out').catch()
+      }
     }
   }
 
@@ -97,8 +116,8 @@ class Worker {
     this.subProcess.send({ type: MESSAGE.RUN_CODE, value: script });
     this.script.start(() => {
       // 杀死子进程
-      this.killWorker();
       script.reject('running timeout, maybe the code is infinite loop');
+      this.killWorker();
     });
   }
 
@@ -112,12 +131,7 @@ class Worker {
 
   // 运行脚本
   async execute(script, stack) {
-    // 构建运行脚本
-    if (this.state === WORKER_STATE.NONE) {
-      this.createWorker();
-    }
-
-    if (this.state === WORKER_STATE.IDLE) {
+    if (this.state === WORKER_STATE.IDLE && !stack) {
       this.runScript(script);
     } else if (this.state === WORKER_STATE.BUSY) {
       if (stack) {
@@ -128,7 +142,6 @@ class Worker {
       }
     }
   }
-
 }
 
 
