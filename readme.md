@@ -140,6 +140,7 @@ const context = {
 const code = fnGroup.caller;
 try {
   const res = await run(code, context);
+  console.log(res); // 打印30
 } catch (error) {
   console.log(error);
 }
