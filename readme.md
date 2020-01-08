@@ -1,27 +1,76 @@
-## 前沿
-`VMBox`是为了解决node的`vm`模块不安全而诞生的`安全沙盒`，可以被用来运行不安全的js代码。非常感谢`VM2`所做出的的贡献。`VMBox`是在`VM2`的基础上增加了`进程`机制，解决了`异步死循环`的问题。
+# vmbox
 
-## 使用
+  `vmbox`是为了解决node的`vm`模块不安全而诞生的`安全沙盒`，可以被用来运行不安全的js代码
 
-### 简单使用
+  node提供了vm模块运行js代码，但是并不安全，无法用来运行不信任的代码。
+  > The vm module is not a security mechanism. Do not use it to run untrusted code
+  
+  社区中提供了`vm2`能够运行不安全的代码，并且能够防御所有已知的攻击方法。但是仍然存在[异步死循环](https://github.com/patriksimek/vm2/issues/180)的问题。
+
+  `vmbox`使用子进程隔离，对[vm2](https://github.com/patriksimek/vm2)进行了封装，解决了`异步死循环`的问题。
+
+  **特点：**
+  * 死循环强制退出
+  * 函数互相调用
+  * 内部任务队列
+  * 进程自治（杀死自启动）
+
+## 安装
+需要nodejs 6以上版本
+```
+npm install vmbox --save
+```
+
+## 使用举例
 ```javascript
-const VMBox = require('VMBox');
+const VMBox = require('vmbox');
 const vmBox = new VMBox({
   timeout: 100,
   asyncTimeout: 500
 });
 
-const fn = `var a = 10`;
-
+const fn = `a = 10`;
 vmBox.run(fn).then(console.log)
 // 打印10
 ```
 `timeout`是代码同步执行的时间， 默认100ms
 `asyncTimeout`限制代码异步执行的时间， 默认500ms
-函数的使用可以参考`VM2`
 
-### 注入函数上下文
+## 文档内容
+* [背景](#背景)
+* [vm2](#vm2)
+* [用法](#用法)
+* [原理](#原理)
+
+## 背景
+项目中有`大量`的`独立`的js函数转化为API对外提供服务，考虑到服务的公用性，期望采用`faas`的思想将函数转变成API服务。
+
+实际调研中发现目前nodejs提供的vm和社区vm2均存在一些问题，为了服务的`安全性`和`稳定性`，对vm2进行了业务封装。
+
+`vmbox`是被用来运行线上服务，因此要求函数尽可能`功能单一`、`依赖较少`，以保障`vmbox`减少超时和良好的性能。
+
+## vm2
+`vm2`自身功能非常强大，`vmbox`封装了vm2最基本的功能，仅支持`context`功能注入，不支持node内建模块和自定义module
+
+## 用法
+`vmbox`的实例只有一个`run`方法，返回值是一个`promise`，接收三个参数
+
+| 参数名 | 类型 | 是否选填 | 默认值 | 简介 |
+|---|---|---|---|---|
+|code|string| 必填 | - | 运行的js代码|
+|context| object | 选填 | {} | 函数运行上下文 |
+|stack | boolean | 选填 | false | 函数内调用其他函数，记录函数调用栈|
+
+如果代码运行出错，会使用Promise.reject(error)抛出异常
+
+**简单使用**
 ```javascript
+const VMBox = require('vmbox');
+const vmBox = new VMBox({
+  timeout: 100,
+  asyncTimeout: 500
+});
+
 const context = {
   sum(a, b){
     return a + b;
@@ -33,33 +82,63 @@ const fn = `sum(2, 3)`
 vmBox.run(fn).then(console.log)
 // 打印5
 ```
-`context`中的方法和属性，会被注入到函数执行的上下文中，成为全局变量
 
-### 异步死循环
+**复杂用法**
+借助函数运行上下文，可以做很多事情，下面实现了一个从函数内部调用其他函数的方法。
 ```javascript
-const context = {
-  sum(a, b){
-    return a + b;
+const VMBox = require('vmbox');
+const vmBox = new VMBox({
+  timeout: 100,
+  asyncTimeout: 500
+});
+
+const fnGroup = {
+  sum: `async function main({params, fn}){
+    const {a, b} = params;
+    return a + b
+  }`,
+  caller: `async function main({params, fn}){
+    return await fn.call('sum', params);
+  }`
+};
+
+async function run(code, context, stack = false) {
+  const runCode = code + `;\n(async () => { return await main({params, fn}); })()`
+  return vmBox.run(runCode, context, stack);
+}
+
+const fn = {
+  call: (name, params) => {
+    const code = fnGroup[name];
+    if (code) {
+      return run(code, { params, fn }, true);
+    } else {
+      return null;
+    }
   }
 }
-const fn = `async function main(){
-    let res = await sum(2, 3);
-    while(1){}
-    return res;
-  };main()`;
 
+const context = {
+  fn,
+  params: {
+    a: 10,
+    b: 20
+  }
+}
+
+const code = fnGroup.caller;
 try {
-  await vmBox.run(fn, context);
+  const res = await run(code, context);
 } catch (error) {
   console.log(error);
 }
-// 打印 running timeout, maybe the code is infinite loop
 ```
-500ms内未执行完成，会kill `runner`，并重启一个新的`runner`
+如果函数相互调用可能会形成调用闭环，运行500ms未结束，执行子进程会被杀死，启动新的子进程。
 
-## 调用流程图
+## 原理
 ![](./images/flow.png)
 1. `Func_Service`是应用程序
 2. `Worker`和`Runner`是VMBox的部分
 3. `Worker` 运行在主进程中
 4. `Runner` 运行在子进程中，即用户代码运行的环境
+
