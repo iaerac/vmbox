@@ -1,4 +1,4 @@
-# vmbox
+# vmbox [![NPM Version][npm-image]][npm-url]
 
   [中文版](./README.zh.md)
 

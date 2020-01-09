@@ -1,4 +1,4 @@
-# vmbox
+# vmbox [![NPM Version][npm-image]][npm-url]
   [English](./README.md)
 
   vmbox是为了解决node的vm模块不安全而诞生的`安全沙盒`，可以被用来运行不安全的js代码
