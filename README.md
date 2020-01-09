@@ -12,6 +12,14 @@
 
   vmbox uses child process isolation and encapsulates [vm2](https://github.com/patriksimek/vm2) to solve the problem of asynchronous endless loop.
 
+## Documentation
+  - [Feature](#Feature)
+  - [Installation](#Installation)
+  - [Quickstart](#Quickstart)
+  - [vm2](#vm2)
+  - [usage](#usage)
+  - [contributing](#contributing)
+
 ## Feature
 
   * forced exit in an endless loop (kill child process in an endless loop)
@@ -42,20 +50,6 @@ vmBox.run(fn).then(console.log)
 ```
 `timeout` is the limit execution time for synchronous code, default 100ms  
 `asyncTimeout`is the limit execution time for asynchronous code, default 500ms
-
-## Documentation
-  - [background](#background)
-  - [vm2](#vm2)
-  - [usage](#usage)
-  - [principle](#principle)
-  - [contributing](#contributing)
-
-## background
-There are a large number of independent js functions in the project that are converted into APIs to provide external services and provided to multiple project calls. It was decided to use the idea of faas to transform the functions into API services. vmbox is the core function of building a simple faas without a cloud vendor.
-
-Project survey found that the current nodejs provided vm and community vm2 are some problems for the security and stability of the service, to vm2 conducted business package.
-
-vmbox is used to run online services, so the function is required to be as single as possible and less dependent, to ensure that vmbox reduces timeouts (restarting processes requires a large amount of cpu resources) and good performance.
 
 ## vm2
 
@@ -155,12 +149,6 @@ try {
 ```
 If the functions call each other, a closed loop of calls may be formed. If the running is not completed for 500ms, the execution child process will be killed and a new child process will be started.
 
-## principle
-![](./images/flow_en.png)
-1. `Func_Service` is a service
-2. `Worker`和`Runner`are part of vmbox
-3. `Worker` run in the main process
-4. `Runner` runs in a child process, the environment in which untrusted code runs
 
 ## contributing
 This repository is used to build faas service. It is currently used in online projects. If you find a problem during use, you can submit an issue and we will fix it as soon as possible. If you have good suggestions for modification, you can submit a pull request, including issue and solution.
