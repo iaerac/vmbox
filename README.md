@@ -3,7 +3,7 @@
 
   [中文版](./README.zh.md)
 
-  vmbox is a `security sandbox` born to solve the insecureness of node's vm module, which can be used to run untrusted js code
+  vmbox is a `security sandbox` born to solve the insecureness of node's vm module. It can be used to run untrusted js code
 
   Node provides a vm module to run js code, but it is not safe and cannot be used to run untrusted code.
   > The vm module is not a security mechanism. Do not use it to run untrusted code
