@@ -19,8 +19,7 @@
     "cover": "nyc npm run test --timeout=3000"
   },
   "repository": {
-    "type": "git",
-    "url": "git@med-gitlab.yitu-inc.com:hcpan/vm.git"
+    "type": "git"
   },
   "author": "haven",
   "license": "ISC"
