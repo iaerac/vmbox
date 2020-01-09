@@ -1,5 +1,5 @@
-# vmbox [![NPM Version][npm-image]][npm-url]
-
+# vmbox 
+  ![npm](https://img.shields.io/npm/v/vmbox)
   [中文版](./README.zh.md)
 
   vmbox is a `security sandbox` born to solve the insecureness of node's vm module, which can be used to run untrusted js code
