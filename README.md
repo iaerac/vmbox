@@ -43,11 +43,6 @@ vmBox.run(fn).then(console.log)
 `asyncTimeout`is the limit execution time for asynchronous code, default 500ms
 
 ## Documentation
-
-  - [Feature](#feature)
-  - [Installation](#installation)
-  - [Quickstart](#quickstart)
-  - [Documentation](#documentation)
   - [background](#background)
   - [vm2](#vm2)
   - [usage](#usage)
