@@ -1,5 +1,6 @@
 # vmbox 
-   ![npm version](https://img.shields.io/npm/v/vmbox.svg?style=flat)
+   [![npm version](https://badge.fury.io/js/vmbox.svg)](https://badge.fury.io/js/vmbox)
+   [![npm download](https://img.shields.io/npm/dt/vmbox.svg)]()
 
   [中文版](./README.zh.md)
 
