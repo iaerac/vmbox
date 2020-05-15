@@ -69,7 +69,7 @@ The vmbox instance has only one `run` method, and the return value is a` promise
 |---|---|---|---|---|
 |code|string| true | - | js code to run|
 |context| object | false | {} | function execution context |
-|stack | boolean | false | false | call other functions within the function and record the function call stack|
+|options | object | false | { timeout: 500 } | limit function running time |
 
 If the code runs incorrectly, an exception will be thrown by Promise.reject (error), and the exception needs to be caught
 
@@ -116,6 +116,7 @@ const fn = `(async function main(sum){
   }  
   return total
 })()`
+```
 
 vmBox.run(fn, context, { timeout: 500 }).then(console.log)
 // log running timeout, maybe the code is infinite loop
