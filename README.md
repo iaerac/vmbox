@@ -116,11 +116,10 @@ const fn = `(async function main(sum){
   }  
   return total
 })()`
-```
 
 vmBox.run(fn, context, { timeout: 500 }).then(console.log)
 // log running timeout, maybe the code is infinite loop
-
+```
 
 ## contributing
 If you find a problem during use, you can submit an issue and we will fix it as soon as possible. If you have good suggestions for modification, you can submit a pull request, including issue and solution.
