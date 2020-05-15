@@ -4,8 +4,7 @@ const VMBox = require('../index.js');
 const assert = require('assert');
 
 const vmBox = new VMBox({
-  asyncTimeout: 500,
-  timeout: 100
+  workerNum: 1
 });
 
 

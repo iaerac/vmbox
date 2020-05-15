@@ -25,7 +25,6 @@
 
   * 死循环强制退出（发生死循环kill子进程）
   * 跨进程函数调用（使用IPC跨进程调用函数）
-  * 函数互相调用（借助context实现函数间调用）
   * 内部任务队列
   * 进程自治（杀死自启动）
   * 返回promise
@@ -40,16 +39,14 @@ npm install vmbox --save
 ```javascript
 const VMBox = require('vmbox');
 const vmBox = new VMBox({
-  timeout: 100,
-  asyncTimeout: 500
+  workerNum: 1
 });
 
 const fn = `a = 10`;
 vmBox.run(fn).then(console.log)
 // 打印10
 ```
-`timeout`是代码同步执行的时间， 默认100ms  
-`asyncTimeout`限制代码异步执行的时间， 默认500ms
+`workerNum`是启动多少个worker节点  
 
 ## vm2
 vm2自身功能非常强大，vmbox封装了vm2最基本的功能，仅支持context功能注入，不支持node内建模块和自定义module
@@ -68,7 +65,7 @@ vmbox的实例只有一个`run`方法，返回值是一个`promise`，接收三�
 |---|---|---|---|---|
 |code|string| 必填 | - | 运行的js代码|
 |context| object | 选填 | {} | 函数运行上下文 |
-|stack | boolean | 选填 | false | 函数内调用其他函数，记录函数调用栈|
+|options | object | 选填 | {timeout: 500} | 函数运行时间长度，超时停止 |
 
 如果代码运行出错，会使用Promise.reject(error)抛出异常，需要对异常进行捕获
 
@@ -77,8 +74,7 @@ vmbox的实例只有一个`run`方法，返回值是一个`promise`，接收三�
 ```javascript
 const VMBox = require('vmbox');
 const vmBox = new VMBox({
-  timeout: 100,
-  asyncTimeout: 500
+  workerNum: 1
 });
 
 const context = {
@@ -89,63 +85,37 @@ const context = {
 
 const fn = `sum(2, 3)`
 
-vmBox.run(fn).then(console.log)
+vmBox.run(fn, context, { timeout: 500 }).then(console.log)
 // 打印5
 ```
 
-**高级用法**
+**异步死循环**
 
-借助函数运行上下文，可以做很多事情，下面实现了一个从函数内部调用其他函数的方法。
 ```javascript
 const VMBox = require('vmbox');
 const vmBox = new VMBox({
-  timeout: 100,
-  asyncTimeout: 500
+  workerNum: 1
 });
 
-const fnGroup = {
-  sum: `async function main({params, fn}){
-    const {a, b} = params;
-    return a + b
-  }`,
-  caller: `async function main({params, fn}){
-    return await fn.call('sum', params);
-  }`
-};
-
-async function run(code, context, stack = false) {
-  const runCode = code + `;\n(async () => { return await main({params, fn}); })()`
-  return vmBox.run(runCode, context, stack);
-}
-
-const fn = {
-  call: (name, params) => {
-    const code = fnGroup[name];
-    if (code) {
-      return run(code, { params, fn }, true);
-    } else {
-      return null;
-    }
-  }
-}
-
 const context = {
-  fn,
-  params: {
-    a: 10,
-    b: 20
+  getSum: async (a, b) => {
+    // 仅用于演示异步操作
+    return Promise.resolve(a +b);
   }
 }
 
-const code = fnGroup.caller;
-try {
-  const res = await run(code, context);
-  console.log(res); // 打印30
-} catch (error) {
-  console.log(error);
-}
+const fn = `(async function main(sum){
+  var total = await getSum(1, 3)
+  while(1){
+    // doSomething  用来演示花费很长时间的运行
+  }  
+  return total
+})()`
+
+vmBox.run(fn, context, { timeout: 500 }).then(console.log)
+// 打印错误 running timeout, maybe the code is infinite loop
 ```
-如果函数相互调用可能会形成调用闭环，运行500ms未结束，执行子进程会被杀死，启动新的子进程。
+
 
 
 ## 贡献代码

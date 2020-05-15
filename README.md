@@ -25,7 +25,6 @@
 
   * forced exit in an endless loop (kill child process in an endless loop)
   * cross-process function call (using IPC cross-process call function)
-  * functions call each other (inter-function calls with the help of context)
   * internal task queue
   * process autonomy (killed since startup)
   * return promise
@@ -95,60 +94,31 @@ vmBox.run(fn).then(console.log)
 // log 5
 ```
 
-**advanced usage**
-
-There are many things you can do with the help of a function execution context. Here is a method that calls other functions from inside the function.
+**async infinite loop**
 
 ```javascript
 const VMBox = require('vmbox');
 const vmBox = new VMBox({
-  timeout: 100,
-  asyncTimeout: 500
+  workerNum: 1
 });
 
-const fnGroup = {
-  sum: `async function main({params, fn}){
-    const {a, b} = params;
-    return a + b
-  }`,
-  caller: `async function main({params, fn}){
-    return await fn.call('sum', params);
-  }`
-};
-
-async function run(code, context, stack = false) {
-  const runCode = code + `;\n(async () => { return await main({params, fn}); })()`
-  return vmBox.run(runCode, context, stack);
-}
-
-const fn = {
-  call: (name, params) => {
-    const code = fnGroup[name];
-    if (code) {
-      return run(code, { params, fn }, true);
-    } else {
-      return null;
-    }
-  }
-}
-
 const context = {
-  fn,
-  params: {
-    a: 10,
-    b: 20
+  getSum: async (a, b) => {
+    // just display async operation
+    return Promise.resolve(a +b);
   }
 }
 
-const code = fnGroup.caller;
-try {
-  const res = await run(code, context);
-  console.log(res); // 打印30
-} catch (error) {
-  console.log(error);
-}
-```
-If the functions call each other, a closed loop of calls may be formed. If the running is not completed for 500ms, the execution child process will be killed and a new child process will be started.
+const fn = `(async function main(sum){
+  var total = await getSum(1, 3)
+  while(1){
+    // doSomething
+  }  
+  return total
+})()`
+
+vmBox.run(fn, context, { timeout: 500 }).then(console.log)
+// log running timeout, maybe the code is infinite loop
 
 
 ## contributing

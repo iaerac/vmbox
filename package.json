@@ -1,6 +1,6 @@
 {
   "name": "vmbox",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "node safity sandbox",
   "main": "index.js",
   "directories": {

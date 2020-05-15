@@ -9,16 +9,15 @@ const Script = require('./script');
 class VMBox {
 
   constructor(options = {}) {
-    this.worker = new Worker();
-    this.asyncTimeout = options.asyncTimeout || 500;
-    this.timeout = options.timeout || 100;
+    this.worker = new Worker(options.workerNum || require('os').cpus() - 1);
   }
 
   // 运行函数
-  async run(code, context = {}, stack = false) {
+  async run(code, context = {}, options) {
     // 将脚本交给worker运行
-    const script = new Script({ code, asyncTimeout: this.asyncTimeout, context, timeout: this.timeout });
-    this.worker.execute(script, stack);
+    const { timeout = 500 } = options;
+    const script = new Script({ code, asyncTimeout: timeout, context, timeout });
+    this.worker.execute(script);
     return script.defer;
   }
 }
